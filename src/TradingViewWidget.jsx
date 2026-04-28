@@ -1,8 +1,6 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 
-const TradingViewWidget = memo(({ symbol = "BCBA:GGAL" }) => {
-  // Construimos la URL del widget de TradingView de forma dinámica
-  // Usamos el servidor 's.tradingview.com' que suele ser más estable que el de S3
+const TradingViewWidget = memo(({ symbol = "BCBA:GGAL", height = "500px" }) => {
   const baseUrl = "https://s.tradingview.com/widgetembed/";
   const params = new URLSearchParams({
     symbol: symbol,
@@ -14,7 +12,7 @@ const TradingViewWidget = memo(({ symbol = "BCBA:GGAL" }) => {
     toolbarbg: "f1f3f6",
     studies: "[]",
     theme: "light",
-    style: "2", // Estilo de gráfico de área (más limpio para el dashboard)
+    style: "3", // Estilo de área con más detalle
     timezone: "America/Argentina/Buenos_Aires",
     withdateranges: "1",
     hideideas: "1",
@@ -24,7 +22,7 @@ const TradingViewWidget = memo(({ symbol = "BCBA:GGAL" }) => {
   const iframeUrl = `${baseUrl}?${params.toString()}`;
 
   return (
-    <div style={{ height: "220px", width: "100%", overflow: 'hidden', borderRadius: '12px' }}>
+    <div style={{ height: height, width: '100%', overflow: 'hidden', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
       <iframe
         title={`Grafico-${symbol}`}
         src={iframeUrl}
