@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
-import { Trash2, Sparkles, PlusCircle, BarChart3, Info } from 'lucide-react'
+import { Trash2, Sparkles, PlusCircle, BarChart3, Info, CalendarDays } from 'lucide-react'
 
 export default function Dashboard({ session }) {
   const [loading, setLoading] = useState(false)
@@ -9,6 +9,7 @@ export default function Dashboard({ session }) {
   const [categorias, setCategorias] = useState([])
   const [dataGrafico, setDataGrafico] = useState([])
   
+  // Estados de fecha
   const [mes, setMes] = useState(new Date().getMonth() + 1)
   const [anio, setAnio] = useState(new Date().getFullYear())
 
@@ -31,9 +32,18 @@ export default function Dashboard({ session }) {
   }
 
   const fetchGastos = async () => {
+    // Calculamos el rango usando el mes Y el año seleccionado
     const primerDia = new Date(anio, mes - 1, 1).toISOString()
     const ultimoDia = new Date(anio, mes, 0, 23, 59, 59).toISOString()
-    const { data } = await supabase.from('gastos').select('*, categorias(nombre)').eq('es_tarjeta', true).gte('fecha_gasto', primerDia).lte('fecha_gasto', ultimoDia).order('fecha_gasto', { ascending: false })
+    
+    const { data } = await supabase
+      .from('gastos')
+      .select('*, categorias(nombre)')
+      .eq('es_tarjeta', true)
+      .gte('fecha_gasto', primerDia)
+      .lte('fecha_gasto', ultimoDia)
+      .order('fecha_gasto', { ascending: false })
+    
     if (data) { setGastos(data); procesarDatosGrafico(data); }
   }
 
@@ -76,7 +86,8 @@ export default function Dashboard({ session }) {
     
     const inserts = [];
     for (let i = 0; i < cantCuotas; i++) {
-      const fecha = new Date(); fecha.setMonth(fecha.getMonth() + i);
+      const fecha = new Date(); 
+      fecha.setMonth(fecha.getMonth() + i);
       inserts.push({ 
         monto: montoPorCuota, 
         descripcion: cantCuotas > 1 ? `${descripcion} (${i + 1}/${cantCuotas})` : descripcion, 
@@ -97,7 +108,7 @@ export default function Dashboard({ session }) {
 
   return (
     <div style={{ width: '100%' }}>
-      {/* HEADER */}
+      {/* HEADER CON DOBLE FILTRO */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <span style={{ fontSize: '2.5rem' }}>🏠</span>
@@ -107,12 +118,21 @@ export default function Dashboard({ session }) {
           </div>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'white', padding: '15px 25px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-          <select value={mes} onChange={(e) => setMes(parseInt(e.target.value))} style={{ padding: '8px', border: 'none', background: '#f1f5f9', borderRadius: '8px', fontWeight: 'bold' }}>
-            {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"].map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-          </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'white', padding: '15px 25px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {/* SELECT DE MES */}
+            <select value={mes} onChange={(e) => setMes(parseInt(e.target.value))} style={{ padding: '8px 12px', border: 'none', background: '#f1f5f9', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"].map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
+            
+            {/* SELECT DE AÑO (NUEVO) */}
+            <select value={anio} onChange={(e) => setAnio(parseInt(e.target.value))} style={{ padding: '8px 12px', border: 'none', background: '#f1f5f9', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {[2024, 2025, 2026, 2027, 2028].map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+
           <div style={{ borderLeft: '2px solid #e2e8f0', paddingLeft: '20px' }}>
-            <small style={{ color: '#64748b', display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 'bold' }}>Total Mes</small>
+            <small style={{ color: '#64748b', display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 'bold' }}>Consumo Estimado</small>
             <span style={{ color: '#24b47e', fontSize: '1.8rem', fontWeight: '800' }}>${totalMes.toLocaleString('es-AR')}</span>
           </div>
         </div>
@@ -120,7 +140,7 @@ export default function Dashboard({ session }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         
-        {/* FORMULARIO */}
+        {/* FORMULARIO DE CARGA */}
         <section style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 0, marginBottom: '25px' }}>
             <PlusCircle size={22} color="#24b47e" /> Cargar Tarjeta
@@ -138,7 +158,6 @@ export default function Dashboard({ session }) {
                 {categorias.map(cat => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
               </select>
               <select value={cuotas} onChange={(e) => setCuotas(e.target.value)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem' }}>
-                {/* OPCIÓN DE 18 AGREGADA AQUÍ */}
                 {[1, 2, 3, 4, 6, 12, 18].map(n => <option key={n} value={n}>{n} cuotas</option>)}
                 <option value="Z">Plan Z</option>
               </select>
@@ -163,26 +182,32 @@ export default function Dashboard({ session }) {
           </form>
         </section>
 
-        {/* MOVIMIENTOS */}
+        {/* LISTADO DINÁMICO */}
         <section style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', maxHeight: '700px' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 0, marginBottom: '20px' }}>
-            <BarChart3 size={22} color="#4a5568" /> Movimientos del Mes
+            <CalendarDays size={22} color="#4a5568" /> Gastos de {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][mes-1]} {anio}
           </h3>
           <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
-            {gastos.map(g => (
-              <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div>
-                  <span style={{ fontSize: '1rem', fontWeight: '600', display: 'block', color: '#1a202c' }}>{g.descripcion}</span>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>{g.categorias?.nombre}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <strong style={{ color: '#e11d48', fontSize: '1.1rem' }}>-${parseFloat(g.monto).toLocaleString('es-AR')}</strong>
-                  {g.usuario_id === session.user.id && (
-                    <button onClick={() => eliminarGasto(g)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e0' }}><Trash2 size={18} /></button>
-                  )}
-                </div>
+            {gastos.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>
+                No hay consumos registrados para esta fecha.
               </div>
-            ))}
+            ) : (
+              gastos.map(g => (
+                <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <div>
+                    <span style={{ fontSize: '1rem', fontWeight: '600', display: 'block', color: '#1a202c' }}>{g.descripcion}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>{g.categorias?.nombre}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <strong style={{ color: '#e11d48', fontSize: '1.1rem' }}>-${parseFloat(g.monto).toLocaleString('es-AR')}</strong>
+                    {g.usuario_id === session.user.id && (
+                      <button onClick={() => eliminarGasto(g)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e0' }}><Trash2 size={18} /></button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
