@@ -33,19 +33,21 @@ export default function Mercados() {
 
   const fetchData = async () => {
     try {
-      const resDolares = await fetch('https://dolarapi.com/v1/dolares')
+      setLoading(true)
+      
+      // 1. Dólares desde ArgentinaDatos (Cotizaciones actuales)
+      const resDolares = await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares')
       const dataDolares = await resDolares.json()
+      // ArgentinaDatos devuelve una lista con el último valor de cada tipo
       setDolares(dataDolares)
 
+      // 2. Tasas de Plazo Fijo (ArgentinaDatos)
       const resTasas = await fetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo')
       const dataTasas = await resTasas.json()
       
       if (dataTasas && dataTasas.length > 0) {
-        // Buscamos la fecha más reciente en todo el set de datos
         const fechasOrdenadas = [...new Set(dataTasas.map(t => t.fecha))].sort().reverse()
         const ultimaFecha = fechasOrdenadas[0]
-        
-        // Filtramos por esa fecha
         const ultimasTasas = dataTasas.filter(t => t.fecha === ultimaFecha)
         setTasas(ultimasTasas)
       }
@@ -60,7 +62,7 @@ export default function Mercados() {
 
   useEffect(() => {
     fetchData()
-    const intervalo = setInterval(() => { fetchData() }, 900000)
+    const intervalo = setInterval(() => { fetchData() }, 900000) // 15 min
     return () => clearInterval(intervalo)
   }, [])
 
@@ -70,36 +72,41 @@ export default function Mercados() {
     marginBottom: '20px', userSelect: 'none'
   }
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Sincronizando mercados...</div>
+  if (loading && dolares.length === 0) return <div style={{ padding: '40px', textAlign: 'center' }}>Sincronizando mercados...</div>
 
   return (
     <div style={{ width: '100%' }}>
       <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '900', color: '#1a202c' }}>💹 Monitor Financiero</h1>
-          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Datos actualizados automáticamente.</p>
+          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Fuente unificada: ArgentinaDatos API</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a0aec0', fontSize: '0.85rem', background: 'white', padding: '10px 15px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-          <RefreshCw size={14} />
-          Actualizado: {ultimaActualizacion.toLocaleTimeString()} (Ciclo 15m)
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          Actualizado: {ultimaActualizacion.toLocaleTimeString()} (Auto 15m)
         </div>
       </div>
 
-      {/* --- SECCIÓN DÓLARES --- */}
+      {/* --- SECCIÓN DÓLARES (Migrada) --- */}
       <div style={sectionHeaderStyle} onClick={() => setShowDolares(!showDolares)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Globe size={24} color="#24b47e" /> Dólar en Argentina
+          <Globe size={24} color="#24b47e" /> Cotizaciones del Dólar
         </h3>
         {showDolares ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
       </div>
       
       {showDolares && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '50px' }}>
-          {dolares.slice(0, 4).map((d) => (
+          {dolares.map((d) => (
             <div key={d.casa} style={{ background: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px' }}>Dólar {d.nombre}</span>
+              {/* ArgentinaDatos usa 'casa' para el nombre (blue, oficial, ccl, etc) */}
+              <span style={{ fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px' }}>
+                Dólar {d.casa}
+              </span>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
-                <span style={{ fontSize: '2.2rem', fontWeight: '900', color: '#1a202c' }}>${d.venta}</span>
+                <span style={{ fontSize: '2.2rem', fontWeight: '900', color: '#1a202c' }}>
+                  ${d.venta ? d.venta.toLocaleString('es-AR') : '---'}
+                </span>
                 <div style={{ padding: '6px 12px', background: '#f0fff4', color: '#24b47e', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '900' }}>• LIVE</div>
               </div>
             </div>
@@ -129,10 +136,10 @@ export default function Mercados() {
         </div>
       )}
 
-      {/* --- SECCIÓN TASAS CORREGIDA --- */}
+      {/* --- SECCIÓN TASAS --- */}
       <div style={sectionHeaderStyle} onClick={() => setShowTasas(!showTasas)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Landmark size={24} color="#4a5568" /> Tasas de Plazo Fijo (ArgentinaDatos)
+          <Landmark size={24} color="#4a5568" /> Tasas de Plazo Fijo
         </h3>
         {showTasas ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
       </div>
@@ -141,7 +148,6 @@ export default function Mercados() {
         <div style={{ background: '#1a202c', padding: '35px', borderRadius: '32px', color: 'white', marginBottom: '60px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '30px' }}>
             {tasas.slice(0, 10).map((t, i) => {
-              // Intentamos obtener el valor de tnaClientes o tna_clientes
               const valorTna = parseFloat(t.tnaClientes || t.tna_clientes || t.tna || 0)
               const tnaVisible = (valorTna * 100).toFixed(1)
               
