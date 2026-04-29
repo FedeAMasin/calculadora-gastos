@@ -6,20 +6,21 @@ import {
   Globe, 
   ChevronDown, 
   ChevronUp, 
-  Activity 
+  Activity,
+  RefreshCw
 } from 'lucide-react'
 import TradingViewWidget from './TradingViewWidget'
 
 export default function Mercados() {
   const [dolares, setDolares] = useState([])
+  const [tasas, setTasas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date())
   
-  // Estados para colapsar secciones
   const [showDolares, setShowDolares] = useState(true)
   const [showAcciones, setShowAcciones] = useState(true)
   const [showTasas, setShowTasas] = useState(true)
 
-  // Lista de Activos para la Galería
   const activos = [
     { nombre: "S&P 500 (EE.UU.)", sym: "SP:SPX" },
     { nombre: "Merval Líder (Argentina)", sym: "BCBA:IBV" },
@@ -31,20 +32,39 @@ export default function Mercados() {
     { nombre: "Galicia (GGAL)", sym: "BCBA:GGAL" }
   ]
 
-  useEffect(() => {
-    fetchDolares()
-  }, [])
-
-  const fetchDolares = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('https://dolarapi.com/v1/dolares')
-      const data = await response.json()
-      setDolares(data)
+      // 1. Fetch de Dólares (DolarApi)
+      const resDolares = await fetch('https://dolarapi.com/v1/dolares')
+      const dataDolares = await resDolares.json()
+      setDolares(dataDolares)
+
+      // 2. Fetch de Tasas de Plazo Fijo (ArgentinaDatos API)
+      const resTasas = await fetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo')
+      const dataTasas = await resTasas.json()
+      
+      // La API devuelve un historial, filtramos solo la última fecha disponible para cada banco
+      const ultimasTasas = dataTasas.filter(t => t.fecha === dataTasas[dataTasas.length - 1].fecha)
+      setTasas(ultimasTasas)
+
+      setUltimaActualizacion(new Date())
       setLoading(false)
     } catch (error) {
-      console.error("Error", error); setLoading(false);
+      console.error("Error al sincronizar datos:", error)
+      setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchData()
+
+    // Configurar intervalo de 15 minutos (900,000 ms)
+    const intervalo = setInterval(() => {
+      fetchData()
+    }, 900000)
+
+    return () => clearInterval(intervalo)
+  }, [])
 
   const sectionHeaderStyle = {
     display: 'flex', 
@@ -61,9 +81,15 @@ export default function Mercados() {
 
   return (
     <div style={{ width: '100%' }}>
-      <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '900', color: '#1a202c' }}>💹 Monitor Financiero</h1>
-        <p style={{ color: '#718096', fontSize: '1.1rem' }}>Datos en tiempo real para decisiones estratégicas.</p>
+      <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '900', color: '#1a202c' }}>💹 Monitor Financiero</h1>
+          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Datos en tiempo real para decisiones estratégicas.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a0aec0', fontSize: '0.85rem', background: 'white', padding: '10px 15px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <RefreshCw size={14} />
+          Actualizado: {ultimaActualizacion.toLocaleTimeString()} (Auto 15m)
+        </div>
       </div>
 
       {/* --- SECCIÓN DÓLARES --- */}
@@ -97,13 +123,7 @@ export default function Mercados() {
       </div>
 
       {showAcciones && (
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '40px', 
-          marginBottom: '50px',
-          paddingBottom: '20px'
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', marginBottom: '50px' }}>
           {activos.map((activo, index) => (
             <div key={index} style={{ background: 'white', padding: '25px', borderRadius: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -119,24 +139,19 @@ export default function Mercados() {
       {/* --- SECCIÓN TASAS --- */}
       <div style={sectionHeaderStyle} onClick={() => setShowTasas(!showTasas)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Landmark size={24} color="#4a5568" /> Tasas de Referencia (Plazo Fijo)
+          <Landmark size={24} color="#4a5568" /> Tasas de Plazo Fijo (API ArgentinaDatos)
         </h3>
         {showTasas ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
       </div>
 
       {showTasas && (
         <div style={{ background: '#1a202c', padding: '35px', borderRadius: '32px', color: 'white', marginBottom: '60px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '30px' }}>
-            {[
-              { b: "Bco. Nación", t: "60%" },
-              { b: "Santander", t: "62%" },
-              { b: "Galicia", t: "61%" },
-              { b: "Macro", t: "62.5%" }
-            ].map((p, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '30px' }}>
+            {tasas.slice(0, 8).map((t, i) => ( // Mostramos los primeros 8 bancos
               <div key={i} style={{ borderLeft: '3px solid #24b47e', paddingLeft: '20px' }}>
-                <span style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '5px' }}>{p.b}</span>
-                <span style={{ fontSize: '2rem', fontWeight: '900', color: '#68d391' }}>{p.t}</span>
-                <small style={{ display: 'block', color: '#4a5568', fontSize: '0.7rem', marginTop: '5px' }}>TASA NOMINAL ANUAL</small>
+                <span style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '5px', textTransform: 'uppercase' }}>{t.entidad}</span>
+                <span style={{ fontSize: '1.8rem', fontWeight: '900', color: '#68d391' }}>{(t.tna * 100).toFixed(1)}%</span>
+                <small style={{ display: 'block', color: '#4a5568', fontSize: '0.65rem', marginTop: '5px' }}>TASA NOMINAL ANUAL</small>
               </div>
             ))}
           </div>
