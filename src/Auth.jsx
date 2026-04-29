@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import { Mail, Lock, ArrowLeft, Send, LayoutDashboard, CheckCircle } from 'lucide-react'
+import { 
+  Mail, 
+  Lock, 
+  ArrowLeft, 
+  Send, 
+  LayoutDashboard, 
+  CheckCircle, 
+  AlertCircle 
+} from 'lucide-react'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [modo, setModo] = useState('login') // 'login', 'paso1', 'paso2'
+  const [modo, setModo] = useState('login') // 'login', 'paso1' (mail), 'paso2' (password)
   const [mensaje, setMensaje] = useState('')
 
-  // Detectar si el usuario viene desde el mail de confirmación
+  // Detectar si el usuario vuelve del mail de confirmación
   useEffect(() => {
     const query = new URLSearchParams(window.location.search)
     if (query.get('proceso') === 'completar-registro') {
@@ -17,110 +25,146 @@ export default function Auth() {
     }
   }, [])
 
+  // --- 1. LOGIN TRADICIONAL ---
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) alert("Error: " + error.message)
+    if (error) alert("Error al entrar: " + error.message)
     setLoading(false)
   }
 
-  // PASO 1: Verificar si existe y enviar mail
+  // --- 2. REGISTRO PASO 1: VERIFICAR Y ENVIAR MAIL ---
   const iniciarRegistro = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setMensaje('')
 
-    // Nota: Supabase no permite listar usuarios por seguridad, 
-    // pero podemos intentar un "Sign In con OTP". 
-    // Si la cuenta no existe, Supabase la crea (si está habilitado el registro).
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        // Redirigimos al paso 2
-        emailRedirectTo: `${window.location.origin}/?proceso=completar-registro`,
-      },
-    })
+    try {
+      // LLAMADA AL RPC (La función SQL que creamos)
+      const { data: existe, error: errorRPC } = await supabase.rpc('check_email_exists', { 
+        email_to_check: email 
+      })
 
-    if (error) {
-      alert("Error: " + error.message)
-    } else {
-      setMensaje('Te enviamos un correo. Hacé clic en el enlace para elegir tu contraseña.')
+      if (errorRPC) throw errorRPC
+
+      if (existe) {
+        alert("Este correo ya está registrado. Por favor, iniciá sesión directamente.")
+        setModo('login')
+        setLoading(false)
+        return
+      }
+
+      // Si no existe, enviamos el link de verificación (Magic Link)
+      const { error: errorOTP } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          // Redirigimos al mismo sitio pero con el parámetro para mostrar el Paso 2
+          emailRedirectTo: `${window.location.origin}/?proceso=completar-registro`,
+        },
+      })
+
+      if (errorOTP) throw errorOTP
+
+      setMensaje('¡Casi listo! Te enviamos un correo. Hacé clic en el enlace que recibiste para elegir tu contraseña.')
+    } catch (err) {
+      alert("Hubo un problema: " + err.message)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  // PASO 2: Guardar la contraseña definitiva
-  const completarRegistro = async (e) => {
+  // --- 3. REGISTRO PASO 2: GUARDAR CONTRASEÑA ---
+  const finalizarRegistro = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
-    // El usuario ya está "técnicamente" logueado por el Magic Link, 
-    // ahora le ponemos la password.
+
+    // El usuario ya tiene sesión activa por haber hecho clic en el mail.
+    // Solo le seteamos la contraseña final.
     const { error } = await supabase.auth.updateUser({ password: password })
 
     if (error) {
-      alert("Error al crear contraseña: " + error.message)
+      alert("No se pudo guardar la contraseña: " + error.message)
     } else {
-      alert("¡Cuenta creada con éxito!")
-      window.location.href = window.location.origin // Limpiamos la URL y entramos
+      alert("¡Cuenta configurada con éxito! Bienvenido.")
+      // Limpiamos la URL y entramos al sistema
+      window.location.href = window.location.origin 
     }
     setLoading(false)
   }
 
+  // Estilos rápidos reutilizables
+  const inputContainerStyle = { position: 'relative', marginBottom: '15px' }
   const inputStyle = {
     width: '100%', padding: '14px 45px', borderRadius: '12px', border: '1px solid #e2e8f0',
-    fontSize: '1rem', marginBottom: '15px', boxSizing: 'border-box'
+    fontSize: '1rem', boxSizing: 'border-box', outline: 'none', transition: 'border 0.2s'
   }
-
   const iconStyle = { position: 'absolute', left: '15px', top: '15px', color: '#a0aec0' }
+  const mainBtnStyle = (color = '#1a202c') => ({
+    width: '100%', padding: '14px', background: color, color: 'white', border: 'none',
+    borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+  })
 
   return (
     <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-      <div style={{ width: '100%', maxWidth: '400px', padding: '40px', background: 'white', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '400px', padding: '40px', background: 'white', borderRadius: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.04)', textAlign: 'center' }}>
         
-        <div style={{ display: 'inline-flex', background: '#24b47e', padding: '15px', borderRadius: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'inline-flex', background: '#24b47e', padding: '18px', borderRadius: '20px', marginBottom: '25px' }}>
           <LayoutDashboard size={32} color="white" />
         </div>
 
+        {/* --- VISTA LOGIN --- */}
         {modo === 'login' && (
           <>
-            <h2>Iniciar Sesión</h2>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Entrá a FinanzasApp</p>
+            <h2 style={{ margin: '0 0 10px', fontWeight: '800' }}>¡Hola de nuevo!</h2>
+            <p style={{ color: '#64748b', marginBottom: '30px' }}>Ingresá para ver tus gastos.</p>
             <form onSubmit={handleLogin}>
-              <div style={{ position: 'relative' }}><Mail size={18} style={iconStyle} /><input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required /></div>
-              <div style={{ position: 'relative' }}><Lock size={18} style={iconStyle} /><input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required /></div>
-              <button disabled={loading} style={{ width: '100%', padding: '14px', background: '#1a202c', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>{loading ? 'Entrando...' : 'Entrar'}</button>
+              <div style={inputContainerStyle}><Mail size={18} style={iconStyle} /><input type="email" placeholder="Correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required /></div>
+              <div style={inputContainerStyle}><Lock size={18} style={iconStyle} /><input type="password" placeholder="Tu contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required /></div>
+              <button disabled={loading} style={mainBtnStyle()}>{loading ? 'Iniciando...' : 'Iniciar Sesión'}</button>
             </form>
-            <button onClick={() => setModo('paso1')} style={{ marginTop: '20px', background: 'none', border: 'none', color: '#24b47e', cursor: 'pointer', fontWeight: '600' }}>¿No tenés cuenta? Registrate</button>
+            <button onClick={() => setModo('paso1')} style={{ marginTop: '25px', background: 'none', border: 'none', color: '#24b47e', fontWeight: 'bold', cursor: 'pointer' }}>¿No tenés cuenta? Registrate gratis</button>
           </>
         )}
 
+        {/* --- VISTA REGISTRO: PASO 1 (Verificar mail) --- */}
         {modo === 'paso1' && (
           <>
-            <button onClick={() => setModo('login')} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '20px' }}><ArrowLeft size={16} /> Volver</button>
-            <h2>Validar Correo</h2>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Te enviaremos un link para empezar tu registro.</p>
+            <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+              <button onClick={() => setModo('login')} style={{ background: 'none', border: 'none', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: 0 }}><ArrowLeft size={18} /> Volver</button>
+            </div>
+            <h2 style={{ margin: '0 0 10px', fontWeight: '800' }}>Crear Cuenta</h2>
+            <p style={{ color: '#64748b', marginBottom: '30px' }}>Validaremos que tu correo sea real.</p>
+            
             {mensaje ? (
-              <div style={{ background: '#f0fff4', color: '#24b47e', padding: '20px', borderRadius: '12px', border: '1px solid #c6f6d5' }}>{mensaje}</div>
+              <div style={{ background: '#f0fff4', color: '#24b47e', padding: '25px', borderRadius: '16px', border: '1px solid #c6f6d5', textAlign: 'left', lineHeight: '1.5' }}>
+                <CheckCircle size={20} style={{ marginBottom: '10px' }} /> <br /> {mensaje}
+              </div>
             ) : (
               <form onSubmit={iniciarRegistro}>
-                <div style={{ position: 'relative' }}><Mail size={18} style={iconStyle} /><input type="email" placeholder="Ingresá tu email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required /></div>
-                <button disabled={loading} style={{ width: '100%', padding: '14px', background: '#24b47e', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}><Send size={18} /> {loading ? 'Enviando...' : 'Enviar Correo'}</button>
+                <div style={inputContainerStyle}><Mail size={18} style={iconStyle} /><input type="email" placeholder="Ingresá tu mejor correo" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required /></div>
+                <button disabled={loading} style={mainBtnStyle('#24b47e')}>
+                  {loading ? 'Verificando...' : <><Send size={18} /> Enviar enlace de registro</>}
+                </button>
               </form>
             )}
           </>
         )}
 
+        {/* --- VISTA REGISTRO: PASO 2 (Establecer clave) --- */}
         {modo === 'paso2' && (
           <>
-            <h2 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}><CheckCircle color="#24b47e" /> ¡Mail Verificado!</h2>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Ahora elegí tu contraseña para terminar.</p>
-            <form onSubmit={completarRegistro}>
-              <div style={{ position: 'relative' }}><Lock size={18} style={iconStyle} /><input type="password" placeholder="Nueva Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required minLength={6} /></div>
-              <button disabled={loading} style={{ width: '100%', padding: '14px', background: '#24b47e', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>{loading ? 'Guardando...' : 'Finalizar Registro'}</button>
+            <div style={{ marginBottom: '20px' }}><CheckCircle size={48} color="#24b47e" style={{ margin: '0 auto' }} /></div>
+            <h2 style={{ margin: '0 0 10px', fontWeight: '800' }}>¡Email Verificado!</h2>
+            <p style={{ color: '#64748b', marginBottom: '30px' }}>Para terminar, elegí la contraseña que vas a usar para entrar siempre.</p>
+            <form onSubmit={finalizarRegistro}>
+              <div style={inputContainerStyle}><Lock size={18} style={iconStyle} /><input type="password" placeholder="Elegí una contraseña fuerte" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required minLength={6} /></div>
+              <button disabled={loading} style={mainBtnStyle('#24b47e')}>{loading ? 'Guardando...' : 'Finalizar Registro'}</button>
             </form>
           </>
         )}
+
       </div>
     </div>
   )
