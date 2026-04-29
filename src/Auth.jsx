@@ -27,7 +27,7 @@ export default function Auth() {
     setLoading(true)
     setMensaje(null)
     
-    const { data: dataUsuarios, error: errorUsuarios } = await supabase
+    const { data: dataUsuarios } = await supabase
       .from('usuarios')
       .select('id')
       .ilike('email', email)
@@ -44,14 +44,14 @@ export default function Auth() {
       password: '__temp_verify_check__'
     })
     
-    if (!errorAuth || errorAuth.message.includes('Invalid login credentials')) {
+    if (errorAuth) {
+      if (errorAuth.message.includes('Invalid login credentials')) {
+        setMensaje({ tipo: 'error', texto: 'Ya existe una cuenta con este correo electrónico' })
+        setLoading(false)
+        return
+      }
+    } else {
       setMensaje({ tipo: 'error', texto: 'Ya existe una cuenta con este correo electrónico' })
-      setLoading(false)
-      return
-    }
-    
-    if (errorAuth && !errorAuth.message.includes('Invalid login credentials') && !errorAuth.message.includes('no user')) {
-      setMensaje({ tipo: 'error', texto: errorAuth.message })
       setLoading(false)
       return
     }
