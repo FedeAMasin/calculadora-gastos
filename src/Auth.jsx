@@ -27,15 +27,14 @@ export default function Auth() {
     setLoading(true)
     setMensaje(null)
     
-    const tempPassword = 'temp_verify_' + Date.now()
-    const { error } = await supabase.auth.signUp({ email, password: tempPassword })
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id')
+      .ilike('email', email)
+      .single()
     
-    if (error) {
-      if (error.message.includes('already been registered') || error.message.includes('already exists')) {
-        setMensaje({ tipo: 'error', texto: 'Ya existe una cuenta con este correo electrónico' })
-      } else {
-        setMensaje({ tipo: 'error', texto: error.message })
-      }
+    if (data) {
+      setMensaje({ tipo: 'error', texto: 'Ya existe una cuenta con este correo electrónico' })
       setLoading(false)
       return
     }
