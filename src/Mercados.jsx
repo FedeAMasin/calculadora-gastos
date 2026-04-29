@@ -35,13 +35,19 @@ export default function Mercados() {
     try {
       setLoading(true)
       
-      // 1. Dólares desde ArgentinaDatos (Cotizaciones actuales)
+      // 1. Dólares desde ArgentinaDatos
       const resDolares = await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares')
       const dataDolares = await resDolares.json()
-      // ArgentinaDatos devuelve una lista con el último valor de cada tipo
-      setDolares(dataDolares)
+      
+      // FILTRO: Solo nos quedamos con oficial, blue y tarjeta
+      const casasDeseadas = ['oficial', 'blue', 'tarjeta'];
+      const dolaresFiltrados = dataDolares.filter(d => 
+        casasDeseadas.includes(d.casa.toLowerCase())
+      );
+      
+      setDolares(dolaresFiltrados)
 
-      // 2. Tasas de Plazo Fijo (ArgentinaDatos)
+      // 2. Tasas de Plazo Fijo
       const resTasas = await fetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo')
       const dataTasas = await resTasas.json()
       
@@ -62,7 +68,7 @@ export default function Mercados() {
 
   useEffect(() => {
     fetchData()
-    const intervalo = setInterval(() => { fetchData() }, 900000) // 15 min
+    const intervalo = setInterval(() => { fetchData() }, 900000)
     return () => clearInterval(intervalo)
   }, [])
 
@@ -79,27 +85,26 @@ export default function Mercados() {
       <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '900', color: '#1a202c' }}>💹 Monitor Financiero</h1>
-          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Fuente unificada: ArgentinaDatos API</p>
+          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Filtro: Oficial, Blue y Tarjeta</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a0aec0', fontSize: '0.85rem', background: 'white', padding: '10px 15px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          Actualizado: {ultimaActualizacion.toLocaleTimeString()} (Auto 15m)
+          Actualizado: {ultimaActualizacion.toLocaleTimeString()} (15m)
         </div>
       </div>
 
-      {/* --- SECCIÓN DÓLARES (Migrada) --- */}
+      {/* --- SECCIÓN DÓLARES FILTRADOS --- */}
       <div style={sectionHeaderStyle} onClick={() => setShowDolares(!showDolares)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Globe size={24} color="#24b47e" /> Cotizaciones del Dólar
+          <Globe size={24} color="#24b47e" /> Cotizaciones Principales
         </h3>
         {showDolares ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
       </div>
       
       {showDolares && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '50px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '50px' }}>
           {dolares.map((d) => (
             <div key={d.casa} style={{ background: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              {/* ArgentinaDatos usa 'casa' para el nombre (blue, oficial, ccl, etc) */}
               <span style={{ fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px' }}>
                 Dólar {d.casa}
               </span>
