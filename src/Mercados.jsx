@@ -39,13 +39,18 @@ export default function Mercados() {
       const resDolares = await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares')
       const dataDolares = await resDolares.json()
       
-      // FILTRO: Solo nos quedamos con oficial, blue y tarjeta
+      // --- LÓGICA DE FILTRADO PARA MOSTRAR SOLO 3 TARJETAS ---
       const casasDeseadas = ['oficial', 'blue', 'tarjeta'];
-      const dolaresFiltrados = dataDolares.filter(d => 
-        casasDeseadas.includes(d.casa.toLowerCase())
-      );
       
-      setDolares(dolaresFiltrados)
+      // Filtramos por las 3 casas y nos quedamos solo con la FECHA MÁS RECIENTE de cada una
+      const ultimasCotizaciones = casasDeseadas.map(casa => {
+        const registros = dataDolares
+          .filter(d => d.casa.toLowerCase() === casa)
+          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenamos por fecha (más nueva primero)
+        return registros[0]; // Retornamos solo el primero (el más nuevo)
+      }).filter(Boolean); // Eliminamos nulos si alguna casa no tiene datos
+      
+      setDolares(ultimasCotizaciones)
 
       // 2. Tasas de Plazo Fijo
       const resTasas = await fetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo')
@@ -85,7 +90,7 @@ export default function Mercados() {
       <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '900', color: '#1a202c' }}>💹 Monitor Financiero</h1>
-          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Filtro: Oficial, Blue y Tarjeta</p>
+          <p style={{ color: '#718096', fontSize: '1.1rem' }}>Filtro: Oficial, Blue y Tarjeta (Valores Actuales)</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a0aec0', fontSize: '0.85rem', background: 'white', padding: '10px 15px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -93,7 +98,7 @@ export default function Mercados() {
         </div>
       </div>
 
-      {/* --- SECCIÓN DÓLARES FILTRADOS --- */}
+      {/* SECCIÓN DÓLARES */}
       <div style={sectionHeaderStyle} onClick={() => setShowDolares(!showDolares)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Globe size={24} color="#24b47e" /> Cotizaciones Principales
@@ -102,9 +107,9 @@ export default function Mercados() {
       </div>
       
       {showDolares && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '50px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '50px' }}>
           {dolares.map((d) => (
-            <div key={d.casa} style={{ background: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <div key={d.casa + d.fecha} style={{ background: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
               <span style={{ fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px' }}>
                 Dólar {d.casa}
               </span>
@@ -114,12 +119,13 @@ export default function Mercados() {
                 </span>
                 <div style={{ padding: '6px 12px', background: '#f0fff4', color: '#24b47e', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '900' }}>• LIVE</div>
               </div>
+              <div style={{ marginTop: '10px', fontSize: '0.65rem', color: '#cbd5e0' }}>Fecha: {d.fecha}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* --- SECCIÓN GALERÍA --- */}
+      {/* SECCIÓN GALERÍA */}
       <div style={sectionHeaderStyle} onClick={() => setShowAcciones(!showAcciones)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Activity size={24} color="#4a5568" /> Galería de Activos e Índices
@@ -141,7 +147,7 @@ export default function Mercados() {
         </div>
       )}
 
-      {/* --- SECCIÓN TASAS --- */}
+      {/* SECCIÓN TASAS */}
       <div style={sectionHeaderStyle} onClick={() => setShowTasas(!showTasas)}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Landmark size={24} color="#4a5568" /> Tasas de Plazo Fijo
