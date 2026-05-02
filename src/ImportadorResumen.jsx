@@ -4,9 +4,10 @@ import {
   FileText, Upload, AlertTriangle, CheckCircle2, 
   BarChart3, ArrowRight, List, Info 
 } from 'lucide-react';
+
 import * as pdfjsLib from 'pdfjs-dist';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export default function ImportadorResumen() {
   const [loading, setLoading] = useState(false);
