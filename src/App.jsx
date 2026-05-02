@@ -1,233 +1,127 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import { 
-  CreditCard, 
-  Wallet, 
-  LogOut, 
-  User, 
-  LayoutDashboard, 
-  History, 
-  TrendingUp, 
-  Menu, 
-  X 
-} from 'lucide-react'
-
-// Importación de tus componentes
 import Auth from './Auth'
 import Dashboard from './Dashboard'
-import PresupuestoPersonal from './PresupuestoPersonal'
-import HistorialGastos from './HistorialGastos'
 import Mercados from './Mercados'
+import HistorialGastos from './HistorialGastos'
+import ImportadorResumen from './ImportadorResumen' // El nuevo componente
+import { 
+  LayoutDashboard, 
+  CreditCard, 
+  History, 
+  TrendingUp, 
+  LogOut, 
+  User as UserIcon,
+  Menu,
+  X
+} from 'lucide-react'
 
-function App() {
+export default function App() {
   const [session, setSession] = useState(null)
-  const [vista, setVista] = useState('tarjeta')
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [isSidebarOpen, setSidebarOpen] = useState(true)
 
-  // Manejo de Sesión con Supabase
   useEffect(() => {
+    // Escuchar cambios en la sesión de Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
+
     return () => subscription.unsubscribe()
   }, [])
 
-  if (!session) return <Auth />
+  // Si no hay sesión, mostramos la pantalla de Login/Registro
+  if (!session) {
+    return <Auth />
+  }
 
-  // Estilo dinámico para los botones del Sidebar
-  const btnStyle = (active) => ({
-    width: '100%',
-    padding: '14px 20px',
-    marginBottom: '8px',
-    textAlign: 'left',
-    cursor: 'pointer',
-    background: active ? '#24b47e20' : 'transparent',
-    border: 'none',
-    color: active ? '#24b47e' : '#a0aec0',
-    borderRadius: '12px',
-    fontSize: '1rem',
-    fontWeight: active ? '600' : '400',
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  // Estilos de navegación
+  const navItemStyle = (tab) => ({
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    transition: 'all 0.2s ease'
+    padding: '14px 20px',
+    borderRadius: '16px',
+    cursor: 'pointer',
+    marginBottom: '8px',
+    transition: 'all 0.2s',
+    background: activeTab === tab ? '#24b47e' : 'transparent',
+    color: activeTab === tab ? 'white' : '#64748b',
+    fontWeight: activeTab === tab ? '700' : '500',
+    border: 'none',
+    width: '100%',
+    textAlign: 'left'
   })
 
   return (
-    <div className="app-layout">
-      <style>{`
-        /* 1. RESETEO NUCLEAR: Ocupa toda la pantalla real */
-        :root, body, #root {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          height: 100vh !important;
-          overflow: hidden !important;
-          display: block !important;
-          background-color: #f8fafc;
-        }
-
-        * { box-sizing: border-box; }
-
-        .app-layout { 
-          display: flex; 
-          height: 100vh; 
-          width: 100vw; 
-          overflow: hidden; 
-          font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        /* SIDEBAR DESKTOP */
-        .sidebar { 
-          width: 280px; 
-          background-color: #1a202c; 
-          display: flex; 
-          flex-direction: column; 
-          justify-content: space-between; 
-          padding: 35px 20px; 
-          flex-shrink: 0; 
-          z-index: 1000;
-        }
-
-        /* CONTENEDOR PRINCIPAL */
-        .main-container { 
-          flex: 1; 
-          overflow-y: auto; 
-          overflow-x: hidden;
-          padding: 40px; 
-          background-color: #f8fafc;
-          display: flex;
-          flex-direction: column;
-        }
-
-        /* SCROLLBAR ESTILIZADO */
-        .main-container::-webkit-scrollbar { width: 6px; }
-        .main-container::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
-
-        /* NAVEGACIÓN MÓVIL */
-        .mobile-nav { 
-          display: none; 
-          background: #1a202c; 
-          padding: 15px 20px; 
-          color: white; 
-          justify-content: space-between; 
-          align-items: center; 
-          position: fixed;
-          top: 0;
-          width: 100%;
-          z-index: 1100;
-        }
-
-        /* RESPONSIVIDAD */
-        @media (max-width: 768px) {
-          .app-layout { flex-direction: column; }
-          .sidebar { 
-            position: fixed; 
-            left: ${isMobileMenuOpen ? '0' : '-100%'}; 
-            top: 60px; 
-            height: calc(100vh - 60px); 
-            width: 100%; 
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-          .mobile-nav { display: flex; }
-          .main-container { padding: 85px 20px 40px 20px; }
-        }
-      `}</style>
-
-      {/* HEADER PARA MÓVILES */}
-      <header className="mobile-nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <LayoutDashboard size={22} color="#24b47e" />
-          <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>FinanzasApp</span>
-        </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-        >
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
-      </header>
-
-      {/* SIDEBAR IZQUIERDO (DESKTOP / MÓVIL OVERLAY) */}
-      <aside className="sidebar">
-        <div>
-          {/* LOGO */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '45px', paddingLeft: '10px' }}>
-            <div style={{ background: '#24b47e', padding: '10px', borderRadius: '12px' }}>
-              <LayoutDashboard size={24} color="white" />
-            </div>
-            <h2 style={{ color: 'white', fontSize: '1.4rem', margin: 0, fontWeight: '700' }}>FinanzasApp</h2>
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden' }}>
+      
+      {/* --- SIDEBAR DE NAVEGACIÓN --- */}
+      <aside style={{ 
+        width: isSidebarOpen ? '280px' : '0', 
+        background: 'white', 
+        borderRight: '1px solid #e2e8f0',
+        padding: isSidebarOpen ? '30px 20px' : '0',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.3s ease',
+        overflow: 'hidden',
+        position: 'relative'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px', padding: '0 10px' }}>
+          <div style={{ background: '#24b47e', padding: '10px', borderRadius: '12px' }}>
+            <LayoutDashboard color="white" size={24} />
           </div>
-
-          {/* MENÚ DE NAVEGACIÓN */}
-          <nav>
-            <button 
-              onClick={() => { setVista('tarjeta'); setIsMobileMenuOpen(false); }} 
-              style={btnStyle(vista === 'tarjeta')}
-            >
-              <CreditCard size={20} /> Tarjeta Compartida
-            </button>
-            
-            <button 
-              onClick={() => { setVista('personal'); setIsMobileMenuOpen(false); }} 
-              style={btnStyle(vista === 'personal')}
-            >
-              <Wallet size={20} /> Mi Presupuesto
-            </button>
-
-            <button 
-              onClick={() => { setVista('historial'); setIsMobileMenuOpen(false); }} 
-              style={btnStyle(vista === 'historial')}
-            >
-              <History size={20} /> Historial Completo
-            </button>
-
-            <button 
-              onClick={() => { setVista('mercados'); setIsMobileMenuOpen(false); }} 
-              style={btnStyle(vista === 'mercados')}
-            >
-              <TrendingUp size={20} /> Mercados
-            </button>
-          </nav>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#1a202c', margin: 0 }}>FinanzasApp</h2>
         </div>
 
-        {/* PERFIL Y SALIR */}
-        <div style={{ background: '#2d3748', padding: '20px', borderRadius: '18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-            <div style={{ background: '#4a5568', padding: '6px', borderRadius: '50%' }}>
-              <User size={14} color="#a0aec0" />
-            </div>
-            <span style={{ 
-              color: '#cbd5e0', 
-              fontSize: '0.8rem', 
-              overflow: 'hidden', 
-              textOverflow: 'ellipsis', 
-              whiteSpace: 'nowrap',
-              maxWidth: '170px'
-            }}>
-              {session.user.email}
-            </span>
-          </div>
+        <nav style={{ flex: 1 }}>
+          <button onClick={() => setActiveTab('dashboard')} style={navItemStyle('dashboard')}>
+            <LayoutDashboard size={20} /> Dashboard
+          </button>
           
+          {/* NUEVA PESTAÑA: TARJETA COMPARTIDA */}
+          <button onClick={() => setActiveTab('compartida')} style={navItemStyle('compartida')}>
+            <CreditCard size={20} /> Tarjeta Compartida
+          </button>
+          
+          <button onClick={() => setActiveTab('mercados')} style={navItemStyle('mercados')}>
+            <TrendingUp size={20} /> Mercados
+          </button>
+          
+          <button onClick={() => setActiveTab('historial')} style={navItemStyle('historial')}>
+            <History size={20} /> Historial
+          </button>
+        </nav>
+
+        {/* INFO DE USUARIO Y LOGOUT */}
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px' }}>
+            <div style={{ background: '#f1f5f9', padding: '8px', borderRadius: '50%' }}>
+              <UserIcon size={20} color="#64748b" />
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '700', color: '#1a202c', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                {session.user.email}
+              </p>
+              <p style={{ margin: 0, fontSize: '0.7rem', color: '#94a3b8' }}>Córdoba, AR</p>
+            </div>
+          </div>
           <button 
-            onClick={() => supabase.auth.signOut()} 
+            onClick={handleLogout}
             style={{ 
-              width: '100%', 
-              padding: '12px', 
-              background: '#f5656520', 
-              color: '#fc8181', 
-              border: '1px solid #f5656540', 
-              borderRadius: '10px', 
-              cursor: 'pointer', 
-              fontWeight: 'bold', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: '10px' 
+              marginTop: '15px', width: '100%', padding: '12px', borderRadius: '12px', 
+              border: '1px solid #fee2e2', background: '#fff1f2', color: '#ef4444', 
+              fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              gap: '10px', cursor: 'pointer' 
             }}
           >
             <LogOut size={18} /> Cerrar Sesión
@@ -235,17 +129,73 @@ function App() {
         </div>
       </aside>
 
-      {/* CONTENIDO DINÁMICO */}
-      <main className="main-container">
-        <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-          {vista === 'tarjeta' && <Dashboard session={session} />}
-          {vista === 'personal' && <PresupuestoPersonal session={session} />}
-          {vista === 'historial' && <HistorialGastos session={session} />}
-          {vista === 'mercados' && <Mercados />}
+      {/* --- CONTENIDO PRINCIPAL --- */}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '40px', position: 'relative' }}>
+        
+        {/* BOTÓN PARA COLAPSAR SIDEBAR */}
+        <button 
+          onClick={() => setSidebarOpen(!isSidebarOpen)}
+          style={{ 
+            position: 'absolute', top: '40px', left: isSidebarOpen ? '-20px' : '20px', 
+            background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%', 
+            width: '40px', height: '40px', display: 'flex', alignItems: 'center', 
+            justifyContent: 'center', cursor: 'pointer', zIndex: 100, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' 
+          }}
+        >
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          
+          {/* RENDERIZADO CONDICIONAL DE SECCIONES */}
+          
+          {activeTab === 'dashboard' && <Dashboard />}
+
+          {activeTab === 'mercados' && <Mercados />}
+
+          {activeTab === 'historial' && <HistorialGastos />}
+
+          {/* SECCIÓN TARJETA COMPARTIDA[cite: 1] */}
+          {activeTab === 'compartida' && (
+            <div>
+              <header style={{ marginBottom: '40px' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1a202c', margin: 0 }}>
+                  💳 Tarjeta Compartida
+                </h1>
+                <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '5px' }}>
+                  Gestión inteligente de gastos entre Federico y Gisele.
+                </p>
+              </header>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', alignItems: 'start' }}>
+                {/* El Importador que diseñamos */}
+                <ImportadorResumen />
+
+                {/* Info adicional de utilidad */}
+                <div style={{ background: '#1a202c', padding: '25px', borderRadius: '28px', color: 'white' }}>
+                  <h4 style={{ margin: '0 0 15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <BarChart3 size={20} color="#24b47e" /> Recordatorio de Impuestos
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: '1.6' }}>
+                    El sistema divide automáticamente los siguientes cargos al 50%:
+                  </p>
+                  <ul style={{ paddingLeft: '20px', fontSize: '0.85rem', color: '#cbd5e0' }}>
+                    <li>IVA Operaciones (RG 4240)[cite: 2]</li>
+                    <li>Impuesto de Sellos[cite: 2]</li>
+                    <li>Plan Turbo (Mantenimiento)[cite: 2]</li>
+                  </ul>
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(36, 180, 126, 0.1)', borderRadius: '12px', border: '1px solid #24b47e' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#24b47e', fontWeight: 'bold' }}>
+                      Exactitud: Federico absorbe el centavo de redondeo en la división para cerrar el balance[cite: 2].
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
     </div>
   )
 }
-
-export default App

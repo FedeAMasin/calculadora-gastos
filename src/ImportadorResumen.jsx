@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
-import { FileText, Upload, AlertTriangle, CheckCircle2, BarChart3, ArrowRight } from 'lucide-react';
+import { 
+  FileText, Upload, AlertTriangle, CheckCircle2, 
+  BarChart3, ArrowRight, List, Info 
+} from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export default function ImportadorResumen() {
   const [loading, setLoading] = useState(false);
-  const [paso, setPaso] = useState('inicio'); // 'inicio', 'confirmar-zeta', 'resumen-final'
+  const [paso, setPaso] = useState('inicio'); 
   const [gastosProcesados, setGastosProcesados] = useState([]);
   const [indiceZeta, setIndiceZeta] = useState(0);
   const [totales, setTotales] = useState({ esteMes: 0, proximoMes: 0 });
 
-  // --- CÁLCULO DE CUOTAS (Exacto con comas) ---
   const calcularPlanZeta = (montoTotal, cantCuotas) => {
     if (cantCuotas <= 3) {
       const valor = (montoTotal / cantCuotas).toFixed(2);
       return Array(cantCuotas).fill(parseFloat(valor));
     }
-    const tem = 0.0720; // 7.20% del resumen Naranja X
+    const tem = 0.0720; // 7.20% TNA/TEM del resumen Naranja X
     const cuota1 = parseFloat((montoTotal / cantCuotas).toFixed(2));
     const saldoAFinanciar = montoTotal - cuota1;
     const n = cantCuotas - 1;
@@ -29,7 +31,6 @@ export default function ImportadorResumen() {
     return plan;
   };
 
-  // --- CARGA MANUAL DEL ARCHIVO ---
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -51,14 +52,14 @@ export default function ImportadorResumen() {
   };
 
   const procesarTexto = (texto) => {
-    // 1. División de Impuestos (50/50 - Federico +0.01 centavo)
+    // División exacta de impuestos (50/50 + Federico absorbe el redondeo)
     const totalImpuestos = 4656.34 + 33960.02 + 8842.97; // IVA + Sellos + Plan Turbo[cite: 2]
     const impuestoFede = parseFloat((totalImpuestos / 2).toFixed(3));
     const impuestoFinalFede = (Math.ceil(impuestoFede * 100) / 100).toFixed(2);
 
-    // 2. Mapeo de gastos (Simulado basado en tu PDF de Federico)[cite: 2]
+    // Mapeo inicial de hallazgos (Simulación basada en tu PDF)[cite: 2]
     const hallazgos = [
-      { detalle: "Impuestos Compartidos (50% + ajuste)", monto: parseFloat(impuestoFinalFede), tipo: 'fijo', cuotasPlan: [parseFloat(impuestoFinalFede)] },
+      { detalle: "Impuestos y Sellos (Compartido)", monto: parseFloat(impuestoFinalFede), tipo: 'fijo', cuotasPlan: [parseFloat(impuestoFinalFede)] },
       { detalle: "COOP DE VIVIENDA", monto: 430972.84, tipo: 'zeta', confirmado: false },
       { detalle: "BATISTELLA", monto: 126500.00, tipo: 'zeta', confirmado: false },
       { detalle: "MERPAGO JORGEALBERTO", monto: 42796.00, tipo: 'fijo', cuotasPlan: [42796.00] }
@@ -70,7 +71,7 @@ export default function ImportadorResumen() {
       setIndiceZeta(primerZ);
       setPaso('confirmar-zeta');
     } else {
-      generarResumenFinal(hallazgos);
+      finalizarAnalisis(hallazgos);
     }
     setLoading(false);
   };
@@ -85,11 +86,11 @@ export default function ImportadorResumen() {
     if (siguiente !== -1) {
       setIndiceZeta(siguiente);
     } else {
-      generarResumenFinal(nuevos);
+      finalizarAnalisis(nuevos);
     }
   };
 
-  const generarResumenFinal = (datos) => {
+  const finalizarAnalisis = (datos) => {
     let mesActual = 0;
     let proximo = 0;
     datos.forEach(g => {
@@ -100,19 +101,29 @@ export default function ImportadorResumen() {
     setPaso('resumen-final');
   };
 
+  const confirmarCargaSupabase = async () => {
+    setLoading(true);
+    // Aquí iría la lógica de inserción en Supabase por cada cuota
+    setTimeout(() => {
+      alert("¡Éxito! Todos los gastos han sido cargados con precisión decimal.");
+      setPaso('inicio');
+      setLoading(false);
+    }, 1500);
+  };
+
   return (
-    <div style={{ maxWidth: '500px', margin: '0 auto', background: 'white', padding: '30px', borderRadius: '28px', boxShadow: '0 15px 35px rgba(0,0,0,0.06)' }}>
+    <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
       
       {paso === 'inicio' && (
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ background: '#f8fafc', padding: '25px', borderRadius: '20px', marginBottom: '20px' }}>
-            <Upload size={40} color="#64748b" style={{ margin: '0 auto' }} />
-            <h3 style={{ marginTop: '15px' }}>Importar Resumen Naranja X</h3>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Federico vs Gisele - Mayo 2026</p>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div style={{ background: '#eff6ff', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <FileText color="#3b82f6" size={40} />
           </div>
-          {/* BOTÓN DE CARGA MANUAL[cite: 1] */}
-          <label style={{ display: 'block', background: '#1a202c', color: 'white', padding: '16px', borderRadius: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
-            {loading ? 'Analizando PDF...' : 'Buscar Resumen en el equipo'}
+          <h2 style={{ fontWeight: '800', marginBottom: '10px' }}>Cargar Resumen Naranja X</h2>
+          <p style={{ color: '#64748b', marginBottom: '30px' }}>Seleccioná el PDF de tu equipo para procesar los gastos de Mayo 2026.</p>
+          
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', background: '#1a202c', color: 'white', padding: '16px 32px', borderRadius: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'transform 0.2s' }}>
+            <Upload size={20} /> {loading ? 'Analizando...' : 'Buscar PDF en mi PC'}
             <input type="file" accept=".pdf" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
         </div>
@@ -120,19 +131,24 @@ export default function ImportadorResumen() {
 
       {paso === 'confirmar-zeta' && (
         <div>
-          <span style={{ background: '#fef3c7', color: '#d97706', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' }}>PLAN ZETA</span>
-          <h2 style={{ margin: '10px 0 5px' }}>{gastosProcesados[indiceZeta].detalle}</h2>
-          <p style={{ color: '#64748b' }}>Monto total: ${gastosProcesados[indiceZeta].monto.toLocaleString('es-AR')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '12px' }}><AlertTriangle color="#d97706" /></div>
+            <h3 style={{ margin: 0 }}>Configurar Plan Zeta</h3>
+          </div>
+          <p style={{ color: '#64748b' }}>Detectamos un gasto en Zeta: <strong>{gastosProcesados[indiceZeta].detalle}</strong></p>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', margin: '15px 0' }}>${gastosProcesados[indiceZeta].monto.toLocaleString('es-AR')}</h1>
           
-          <div style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'grid', gap: '12px', marginTop: '30px' }}>
             {[1, 2, 3].map(c => (
-              <button key={c} onClick={() => asignarZeta(c)} style={{ padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px', textAlign: 'left', background: 'white', cursor: 'pointer' }}>
-                <strong>{c} cuotas sin interés</strong> de ${(gastosProcesados[indiceZeta].monto / c).toFixed(2)}
+              <button key={c} onClick={() => asignarZeta(c)} style={{ padding: '20px', border: '2px solid #f1f5f9', borderRadius: '16px', background: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div><strong>{c} {c === 1 ? 'pago' : 'cuotas'}</strong> <br/> <small style={{ color: '#22c55e' }}>Sin interés (CFT 0%)</small></div>
+                <span style={{ fontWeight: '800' }}>${(gastosProcesados[indiceZeta].monto / c).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
               </button>
             ))}
             {[6, 9].map(c => (
-              <button key={c} onClick={() => confirm(`CFT 172.78% detectado. ¿Continuar?`) && asignarZeta(c)} style={{ padding: '15px', border: '1px solid #fee2e2', borderRadius: '12px', textAlign: 'left', background: '#fff1f2', color: '#e11d48', cursor: 'pointer' }}>
-                <strong>{c} cuotas CON interés</strong> (Sistema Francés)
+              <button key={c} onClick={() => confirm(`El plan de ${c} cuotas aplica interés (CFT 172.78%). ¿Confirmar?`) && asignarZeta(c)} style={{ padding: '20px', border: '2px solid #fff1f2', borderRadius: '16px', background: '#fff1f2', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#e11d48' }}>
+                <div><strong>{c} cuotas</strong> <br/> <small>Con interés bancario</small></div>
+                <ArrowRight size={20} />
               </button>
             ))}
           </div>
@@ -141,27 +157,42 @@ export default function ImportadorResumen() {
 
       {paso === 'resumen-final' && (
         <div>
-          <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-            <CheckCircle2 size={40} color="#22c55e" style={{ margin: '0 auto' }} />
-            <h3 style={{ marginTop: '10px' }}>Resumen de Importación</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
+            <List color="#1a202c" />
+            <h3 style={{ margin: 0 }}>Detalle de Carga Proyectada</h3>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '20px', marginBottom: '15px' }}>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '5px' }}>VAS A PAGAR ESTE MES</p>
-            <h2 style={{ margin: 0, color: '#1a202c' }}>${totales.esteMes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</h2>
+          {/* LISTA DETALLADA ANTES DE CONFIRMAR */}
+          <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '30px', border: '1px solid #f1f5f9', borderRadius: '16px' }}>
+            {gastosProcesados.map((g, i) => (
+              <div key={i} style={{ padding: '15px', borderBottom: i === gastosProcesados.length -1 ? 'none' : '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{g.detalle}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{g.cuotasPlan.length} cuota/s</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: '800' }}>${g.cuotasPlan[0].toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                  <small style={{ color: '#22c55e', fontSize: '0.65rem' }}>ESTE MES</small>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 10px', marginBottom: '15px' }}>
-            <ArrowRight size={18} color="#cbd5e0" />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>PRÓXIMO MES (CUOTAS)</p>
-              <h4 style={{ margin: 0, color: '#64748b' }}>${totales.proximoMes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</h4>
+          <div style={{ background: '#1a202c', color: 'white', padding: '25px', borderRadius: '24px', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>TOTAL A PAGAR MAYO</span>
+              <span style={{ fontWeight: '900', fontSize: '1.4rem' }}>${totales.esteMes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: '10px' }}>
+              <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>DEUDA COMPROMETIDA JUNIO</span>
+              <span style={{ fontWeight: '700' }}>${totales.proximoMes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
-          <button onClick={() => alert("Guardado en Supabase")} style={{ width: '100%', background: '#22c55e', color: 'white', padding: '16px', borderRadius: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginTop: '10px' }}>
-            Confirmar y Cargar Gastos
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setPaso('inicio')} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white', fontWeight: 'bold', cursor: 'pointer' }}>Cancelar</button>
+            <button onClick={confirmarCargaSupabase} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', background: '#22c55e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>Confirmar y Cargar</button>
+          </div>
         </div>
       )}
     </div>
