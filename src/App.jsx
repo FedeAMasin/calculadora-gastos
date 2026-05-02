@@ -4,14 +4,13 @@ import Auth from './Auth'
 import Dashboard from './Dashboard'
 import Mercados from './Mercados'
 import HistorialGastos from './HistorialGastos'
-import TarjetaCompartida from './TarjetaCompartida' // Componente unificado
+import TarjetaCompartida from './TarjetaCompartida'
 import { 
-  Home, 
   CreditCard, 
+  Home, 
   History, 
   TrendingUp, 
-  LogOut,
-  User
+  LogOut
 } from 'lucide-react'
 
 export default function App() {
@@ -36,7 +35,6 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
-      {/* SIDEBAR CON NOMBRES ORIGINALES */}
       <aside style={{ width: '260px', background: '#1a202c', padding: '20px', color: 'white', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
           <div style={{ background: '#24b47e', padding: '8px', borderRadius: '8px' }}><CreditCard size={20} /></div>
