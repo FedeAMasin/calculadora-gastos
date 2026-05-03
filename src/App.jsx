@@ -5,7 +5,13 @@ import Dashboard from './Dashboard'
 import Mercados from './Mercados'
 import HistorialGastos from './HistorialGastos'
 import TarjetaCompartida from './TarjetaCompartida'
-import { CreditCard, Home, History, TrendingUp, LogOut } from 'lucide-react'
+import { 
+  CreditCard, 
+  Home, 
+  History, 
+  TrendingUp, 
+  LogOut 
+} from 'lucide-react'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -19,6 +25,14 @@ export default function App() {
 
   if (!session) return <Auth />
 
+  const navItemStyle = (tab) => ({
+    display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px',
+    borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none',
+    background: activeTab === tab ? 'rgba(36, 180, 126, 0.1)' : 'transparent',
+    color: activeTab === tab ? '#24b47e' : '#94a3b8',
+    fontWeight: activeTab === tab ? '700' : '500', width: '100%', textAlign: 'left'
+  })
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
       <aside style={{ width: '260px', background: '#1a202c', padding: '20px', color: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -28,16 +42,16 @@ export default function App() {
         </div>
 
         <nav style={{ flex: 1 }}>
-          <button onClick={() => setActiveTab('compartida')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'compartida' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'compartida' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'compartida' ? '700' : '500' }}>
+          <button onClick={() => setActiveTab('compartida')} style={navItemStyle('compartida')}>
             <CreditCard size={20} /> Tarjeta Compartida
           </button>
-          <button onClick={() => setActiveTab('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'dashboard' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'dashboard' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'dashboard' ? '700' : '500' }}>
+          <button onClick={() => setActiveTab('dashboard')} style={navItemStyle('dashboard')}>
             <Home size={20} /> Mi Presupuesto
           </button>
-          <button onClick={() => setActiveTab('historial')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'historial' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'historial' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'historial' ? '700' : '500' }}>
+          <button onClick={() => setActiveTab('historial')} style={navItemStyle('historial')}>
             <History size={20} /> Historial Completo
           </button>
-          <button onClick={() => setActiveTab('mercados')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'mercados' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'mercados' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'mercados' ? '700' : '500' }}>
+          <button onClick={() => setActiveTab('mercados')} style={navItemStyle('mercados')}>
             <TrendingUp size={20} /> Mercados
           </button>
         </nav>
