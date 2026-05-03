@@ -5,13 +5,7 @@ import Dashboard from './Dashboard'
 import Mercados from './Mercados'
 import HistorialGastos from './HistorialGastos'
 import TarjetaCompartida from './TarjetaCompartida'
-import { 
-  CreditCard, 
-  Home, 
-  History, 
-  TrendingUp, 
-  LogOut 
-} from 'lucide-react'
+import { CreditCard, Home, History, TrendingUp, LogOut } from 'lucide-react'
 
 export default function App() {
   const [session, setSession] = useState(null)
