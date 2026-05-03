@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
-import Dashboard from './Dashboard'
+import Dashboard from './Dashboard' // Tu "Mi Presupuesto"
 import Mercados from './Mercados'
-import HistorialGastos from './HistorialGastos'
+import HistorialGastos from './HistorialGastos' // Tu "Historial Completo"
 import TarjetaCompartida from './TarjetaCompartida'
 import { 
   CreditCard, 
   Home, 
   History, 
   TrendingUp, 
-  LogOut
+  LogOut 
 } from 'lucide-react'
 
 export default function App() {
@@ -38,7 +38,7 @@ export default function App() {
       <aside style={{ width: '260px', background: '#1a202c', padding: '20px', color: 'white', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
           <div style={{ background: '#24b47e', padding: '8px', borderRadius: '8px' }}><CreditCard size={20} /></div>
-          <h2 style={{ fontSize: '1.2rem', margin: 0 }}>FinanzasApp</h2>
+          <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold' }}>FinanzasApp</h2>
         </div>
 
         <nav style={{ flex: 1 }}>
@@ -56,7 +56,7 @@ export default function App() {
           </button>
         </nav>
 
-        <button onClick={() => supabase.auth.signOut()} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px' }}>
+        <button onClick={() => supabase.auth.signOut()} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px', fontWeight: 'bold' }}>
           <LogOut size={18} /> Cerrar Sesión
         </button>
       </aside>
