@@ -3,13 +3,14 @@ import { supabase } from './supabaseClient'
 import { FileText, PlusCircle, Calendar, RefreshCw } from 'lucide-react'
 import ImportadorResumen from './ImportadorResumen'
 
-export default function TarjetaCompartida() {
+export default function TarjetaCompartida({ session }) {
   const [gastos, setGastos] = useState([])
   const [loading, setLoading] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
   const [mes, setMes] = useState('Mayo')
   const [anio, setAnio] = useState('2026')
 
+  // Traer los gastos de la base de datos usando tus columnas reales
   const fetchGastos = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -51,7 +52,7 @@ export default function TarjetaCompartida() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '30px' }}>
         <section>
-          {/* BOTÓN PARA CAMBIAR A MODO PDF */}
+          {/* BOTÓN PARA ACTIVAR EL MODO PDF */}
           <button 
             onClick={() => setMostrarPDF(!mostrarPDF)}
             style={{ width: '100%', marginBottom: '15px', padding: '12px', borderRadius: '12px', border: '2px dashed #e2e8f0', background: mostrarPDF ? '#f0fdf4' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 'bold', color: mostrarPDF ? '#24b47e' : '#64748b' }}
@@ -60,7 +61,7 @@ export default function TarjetaCompartida() {
           </button>
 
           {mostrarPDF ? (
-            <ImportadorResumen onFinalizar={fetchGastos} />
+            <ImportadorResumen session={session} onFinalizar={fetchGastos} />
           ) : (
             <div style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
               <h3 style={{ margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#24b47e' }}>
@@ -95,7 +96,7 @@ export default function TarjetaCompartida() {
               </div>
             )) : (
               <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '100px' }}>
-                <p>No hay consumos registrados para esta fecha.</p>
+                <p>No hay consumos registrados.</p>
               </div>
             )}
           </div>

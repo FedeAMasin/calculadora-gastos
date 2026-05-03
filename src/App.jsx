@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
-import Dashboard from './Dashboard' // Tu "Mi Presupuesto"
+import Dashboard from './Dashboard'
 import Mercados from './Mercados'
-import HistorialGastos from './HistorialGastos' // Tu "Historial Completo"
+import HistorialGastos from './HistorialGastos'
 import TarjetaCompartida from './TarjetaCompartida'
 import { 
   CreditCard, 
   Home, 
   History, 
   TrendingUp, 
-  LogOut 
+  LogOut,
+  BarChart3 
 } from 'lucide-react'
 
 export default function App() {
@@ -25,6 +26,8 @@ export default function App() {
 
   if (!session) return <Auth />
 
+  const handleLogout = async () => await supabase.auth.signOut()
+
   const navItemStyle = (tab) => ({
     display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px',
     borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none',
@@ -35,6 +38,7 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
+      {/* SIDEBAR ORIGINAL */}
       <aside style={{ width: '260px', background: '#1a202c', padding: '20px', color: 'white', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
           <div style={{ background: '#24b47e', padding: '8px', borderRadius: '8px' }}><CreditCard size={20} /></div>
@@ -56,16 +60,17 @@ export default function App() {
           </button>
         </nav>
 
-        <button onClick={() => supabase.auth.signOut()} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px', fontWeight: 'bold' }}>
+        <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px', fontWeight: 'bold' }}>
           <LogOut size={18} /> Cerrar Sesión
         </button>
       </aside>
 
+      {/* CONTENIDO PRINCIPAL - PASANDO SESSION A TODOS LOS COMPONENTES PARA EVITAR EL ERROR */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
-        {activeTab === 'compartida' && <TarjetaCompartida />}
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'historial' && <HistorialGastos />}
-        {activeTab === 'mercados' && <Mercados />}
+        {activeTab === 'compartida' && <TarjetaCompartida session={session} />}
+        {activeTab === 'dashboard' && <Dashboard session={session} />}
+        {activeTab === 'historial' && <HistorialGastos session={session} />}
+        {activeTab === 'mercados' && <Mercados session={session} />}
       </main>
     </div>
   )
