@@ -10,8 +10,7 @@ import {
   Home, 
   History, 
   TrendingUp, 
-  LogOut,
-  BarChart3 
+  LogOut 
 } from 'lucide-react'
 
 export default function App() {
@@ -26,19 +25,8 @@ export default function App() {
 
   if (!session) return <Auth />
 
-  const handleLogout = async () => await supabase.auth.signOut()
-
-  const navItemStyle = (tab) => ({
-    display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px',
-    borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none',
-    background: activeTab === tab ? 'rgba(36, 180, 126, 0.1)' : 'transparent',
-    color: activeTab === tab ? '#24b47e' : '#94a3b8',
-    fontWeight: activeTab === tab ? '700' : '500', width: '100%', textAlign: 'left'
-  })
-
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc' }}>
-      {/* SIDEBAR ORIGINAL */}
       <aside style={{ width: '260px', background: '#1a202c', padding: '20px', color: 'white', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
           <div style={{ background: '#24b47e', padding: '8px', borderRadius: '8px' }}><CreditCard size={20} /></div>
@@ -46,26 +34,25 @@ export default function App() {
         </div>
 
         <nav style={{ flex: 1 }}>
-          <button onClick={() => setActiveTab('compartida')} style={navItemStyle('compartida')}>
+          <button onClick={() => setActiveTab('compartida')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'compartida' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'compartida' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'compartida' ? '700' : '500' }}>
             <CreditCard size={20} /> Tarjeta Compartida
           </button>
-          <button onClick={() => setActiveTab('dashboard')} style={navItemStyle('dashboard')}>
+          <button onClick={() => setActiveTab('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'dashboard' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'dashboard' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'dashboard' ? '700' : '500' }}>
             <Home size={20} /> Mi Presupuesto
           </button>
-          <button onClick={() => setActiveTab('historial')} style={navItemStyle('historial')}>
+          <button onClick={() => setActiveTab('historial')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'historial' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'historial' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'historial' ? '700' : '500' }}>
             <History size={20} /> Historial Completo
           </button>
-          <button onClick={() => setActiveTab('mercados')} style={navItemStyle('mercados')}>
+          <button onClick={() => setActiveTab('mercados')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px 20px', borderRadius: '8px', cursor: 'pointer', marginBottom: '5px', border: 'none', width: '100%', textAlign: 'left', background: activeTab === 'mercados' ? 'rgba(36, 180, 126, 0.1)' : 'transparent', color: activeTab === 'mercados' ? '#24b47e' : '#94a3b8', fontWeight: activeTab === 'mercados' ? '700' : '500' }}>
             <TrendingUp size={20} /> Mercados
           </button>
         </nav>
 
-        <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px', fontWeight: 'bold' }}>
+        <button onClick={() => supabase.auth.signOut()} style={{ background: 'transparent', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px', fontWeight: 'bold' }}>
           <LogOut size={18} /> Cerrar Sesión
         </button>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL - PASANDO SESSION A TODOS LOS COMPONENTES PARA EVITAR EL ERROR */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
         {activeTab === 'compartida' && <TarjetaCompartida session={session} />}
         {activeTab === 'dashboard' && <Dashboard session={session} />}

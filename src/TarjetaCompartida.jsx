@@ -7,10 +7,7 @@ export default function TarjetaCompartida({ session }) {
   const [gastos, setGastos] = useState([])
   const [loading, setLoading] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
-  const [mes, setMes] = useState('Mayo')
-  const [anio, setAnio] = useState('2026')
 
-  // Traer los gastos de la base de datos usando tus columnas reales
   const fetchGastos = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -34,29 +31,17 @@ export default function TarjetaCompartida({ session }) {
           <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>🏠 Tarjeta Compartida</h1>
           <p style={{ color: '#64748b', margin: 0 }}>Gastos para pagar entre dos.</p>
         </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', background: 'white', padding: '10px 20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-          <select value={mes} onChange={(e) => setMes(e.target.value)} style={{ border: 'none', fontWeight: 'bold', outline: 'none' }}>
-            <option>Mayo</option><option>Junio</option>
-          </select>
-          <select value={anio} onChange={(e) => setAnio(e.target.value)} style={{ border: 'none', fontWeight: 'bold', outline: 'none' }}>
-            <option>2026</option>
-          </select>
-          <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '15px', textAlign: 'right' }}>
-            <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>CONSUMO ESTIMADO</small>
-            <div style={{ color: '#24b47e', fontWeight: '900', fontSize: '1.2rem' }}>
-              ${totalEstimado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </div>
+        <div style={{ background: 'white', padding: '10px 20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', textAlign: 'right' }}>
+          <small style={{ color: '#94a3b8', fontSize: '0.7rem' }}>CONSUMO ESTIMADO</small>
+          <div style={{ color: '#24b47e', fontWeight: '900', fontSize: '1.2rem' }}>
+            ${totalEstimado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
           </div>
         </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '30px' }}>
         <section>
-          {/* BOTÓN PARA ACTIVAR EL MODO PDF */}
-          <button 
-            onClick={() => setMostrarPDF(!mostrarPDF)}
-            style={{ width: '100%', marginBottom: '15px', padding: '12px', borderRadius: '12px', border: '2px dashed #e2e8f0', background: mostrarPDF ? '#f0fdf4' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 'bold', color: mostrarPDF ? '#24b47e' : '#64748b' }}
-          >
+          <button onClick={() => setMostrarPDF(!mostrarPDF)} style={{ width: '100%', marginBottom: '15px', padding: '12px', borderRadius: '12px', border: '2px dashed #e2e8f0', background: mostrarPDF ? '#f0fdf4' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 'bold', color: mostrarPDF ? '#24b47e' : '#64748b' }}>
             <FileText size={18} /> {mostrarPDF ? "Volver a Carga Manual" : "Cargar desde PDF (Naranja X)"}
           </button>
 
@@ -81,7 +66,7 @@ export default function TarjetaCompartida({ session }) {
 
         <section style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', minHeight: '500px' }}>
           <h3 style={{ margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Calendar size={20} /> Gastos de {mes} {anio}
+            <Calendar size={20} /> Gastos Registrados
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {gastos.length > 0 ? gastos.map(g => (
@@ -90,15 +75,9 @@ export default function TarjetaCompartida({ session }) {
                   <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{g.descripcion}</div>
                   <small style={{ color: '#94a3b8' }}>{g.fecha_gasto} {g.total_cuotas > 1 && `(${g.cuota_actual}/${g.total_cuotas})`}</small>
                 </div>
-                <div style={{ fontWeight: '800', color: '#1a202c' }}>
-                  ${parseFloat(g.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                </div>
+                <div style={{ fontWeight: '800' }}>${parseFloat(g.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
               </div>
-            )) : (
-              <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '100px' }}>
-                <p>No hay consumos registrados.</p>
-              </div>
-            )}
+            )) : <p style={{ textAlign: 'center', color: '#94a3b8', marginTop: '100px' }}>No hay consumos registrados.</p>}
           </div>
         </section>
       </div>
