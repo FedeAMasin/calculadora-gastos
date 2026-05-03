@@ -15,26 +15,29 @@ function parsearLineas(texto) {
   const lineas = texto.split('\n');
   const gastos = [];
 
-  // Regex: fecha dd/mm/yy, luego cualquier cosa, luego plan/cuota, luego monto $
-  // El monto $ es el ÚLTIMO número grande con formato argentino en la línea
-  // (ignoramos líneas donde el monto aparece sólo en columna U$S)
-  const reLinea = /(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+(Zeta|Deb\.Aut\.|(\d{1,3})\/(\d{1,3}))\s+([\d.]+,\d{2})\s*$/i;
-  const reLineaSimple = /(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+(\d{2})\s+([\d.]+,\d{2})\s*$/;
+  // Regex con plan explícito: fecha + tarjeta+cupón + descripcion + plan + monto_pesos
+  // El monto en pesos DEBE ser >= 100 (montos chicos son en U$S o basura)
+  // plan puede ser: Zeta, Deb.Aut., o cuotas X/Y (ej: 01/05, 02/18)
+  const reLinea = /(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+(Zeta|(\d{1,3})\/(\d{1,3}))\s+([\d.]+,\d{2})\s*$/i;
 
-  // Palabras a ignorar
+  // Regex pago único: fecha + ... + "01" (exactamente 2 dígitos) + monto_pesos
+  // El "01" debe estar precedido por al menos 5 espacios para diferenciarlo del cupón
+  const reLineaSimple = /(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s{2,}(\d{2})\s+([\d.]+,\d{2})\s*$/;
+
+  // Palabras a ignorar (líneas que no son gastos reales)
   const ignorar = [
     'CREDITO POR PROMOCION', 'IVA', 'IMPUESTO', 'SELLOS', 'BASE IMPONIBLE',
-    'OTROS CARGOS', 'CFT', 'TNA', 'TEA'
+    'OTROS CARGOS', 'CFT', 'TNA', 'TEA', 'DEB.AUT.', 'DEB. AUT.'
   ];
 
   lineas.forEach(linea => {
     const lineaUp = linea.toUpperCase().trim();
     if (!linea.trim()) return;
     if (ignorar.some(p => lineaUp.includes(p))) return;
-    // Ignorar si no empieza con fecha
+    // Solo líneas que empiezan con fecha dd/mm/yy
     if (!/^\d{2}\/\d{2}\/\d{2}/.test(linea.trim())) return;
 
-    // Intentar match con plan explícito
+    // Intentar match con plan explícito (Zeta o cuotas X/Y)
     let match = reLinea.exec(linea.trim());
     if (match) {
       const fecha = match[1];
@@ -42,19 +45,16 @@ function parsearLineas(texto) {
       const plan = match[3];
       const montoStr = match[6];
       const monto = parseMonto(montoStr);
-      if (monto <= 0) return;
+      // Ignorar montos menores a $100 (son dólares u otros cargos menores)
+      if (monto < 100) return;
 
-      // Extraer descripción limpia (después del número de cupón)
       const descripcion = limpiarDescripcion(detalleRaw);
+      if (!descripcion) return; // ignorar si no se pudo extraer descripción
 
       const esZeta = /zeta/i.test(plan);
-      const esDebAut = /deb\.aut/i.test(plan);
-      
+
       if (esZeta) {
         gastos.push({ fecha, descripcion, monto, tipo: 'zeta', confirmado: false });
-      } else if (esDebAut) {
-        // Débito automático = 1 cuota
-        gastos.push({ fecha, descripcion, monto, tipo: 'fijo', cuotaActual: 1, totalCuotas: 1 });
       } else {
         // Cuota X/Y
         const cuotaActual = parseInt(match[4]);
@@ -64,15 +64,23 @@ function parsearLineas(texto) {
       return;
     }
 
-    // Intentar match simple (plan = "01", un solo pago)
+    // Intentar match pago único (plan = "01")
     match = reLineaSimple.exec(linea.trim());
     if (match) {
       const fecha = match[1];
       const detalleRaw = match[2];
+      const planSimple = match[3];
       const montoStr = match[4];
       const monto = parseMonto(montoStr);
-      if (monto <= 0) return;
+
+      // El plan debe ser "01" exactamente (pago único)
+      if (planSimple !== '01') return;
+      // Ignorar montos menores a $100
+      if (monto < 100) return;
+
       const descripcion = limpiarDescripcion(detalleRaw);
+      if (!descripcion) return;
+
       gastos.push({ fecha, descripcion, monto, tipo: 'fijo', cuotaActual: 1, totalCuotas: 1 });
     }
   });
